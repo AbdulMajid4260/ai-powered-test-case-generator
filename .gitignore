@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+*.log
+
+# Node (if a dev server is added later)
+node_modules/
