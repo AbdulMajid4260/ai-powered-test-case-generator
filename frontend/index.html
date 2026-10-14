@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Test Case Generator</title>
+  <meta name="description" content="Turn a plain-English software requirement into structured test cases using an LLM." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <h1>AI Test Case Generator</h1>
+      <p class="lede">
+        Describe a software requirement in plain English. The app sends it to an AI model
+        and returns structured test cases you can review and export.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Input -->
+    <section class="panel" aria-labelledby="input-heading">
+      <h2 id="input-heading">Requirement</h2>
+
+      <form id="requirement-form" novalidate>
+        <label for="requirement" class="visually-hidden">Software requirement</label>
+        <textarea
+          id="requirement"
+          name="requirement"
+          rows="6"
+          maxlength="3000"
+          placeholder="Example: Users can log in with a registered email and password. After 5 failed attempts the account is locked for 15 minutes."
+          aria-describedby="requirement-hint requirement-error"
+        ></textarea>
+
+        <div class="field-meta">
+          <span id="requirement-hint" class="hint">Tip: Press Ctrl + Enter to generate.</span>
+          <span id="char-count" class="hint" aria-live="polite">0 / 3000</span>
+        </div>
+        <p id="requirement-error" class="field-error" role="alert" hidden></p>
+
+        <div class="actions">
+          <button type="submit" id="generate-btn" class="btn btn-primary">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Generate test cases</span>
+          </button>
+          <button type="button" id="clear-btn" class="btn btn-ghost">Clear</button>
+        </div>
+
+        <div class="examples">
+          <span class="hint">Fill in an example:</span>
+          <button type="button" class="chip" data-example="Users can log in with a registered email and password. After 5 consecutive failed attempts, the account is locked for 15 minutes.">Login</button>
+          <button type="button" class="chip" data-example="Customers can add products to a shopping cart, change quantities from 1 to 10, remove items, and see the updated total price including tax.">Shopping cart</button>
+          <button type="button" class="chip" data-example="A user can reset their password by requesting an email link. The link expires after 30 minutes and can be used only once.">Password reset</button>
+        </div>
+      </form>
+
+      <!-- Status / errors -->
+      <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+      <div id="error-banner" class="banner banner-error" role="alert" hidden>
+        <strong id="error-title">Something went wrong</strong>
+        <p id="error-message"></p>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="panel" aria-labelledby="results-heading">
+      <div class="results-head">
+        <div>
+          <h2 id="results-heading">Generated test cases</h2>
+          <p id="summary" class="hint">Nothing generated yet.</p>
+        </div>
+        <div class="export-actions">
+          <button type="button" id="export-csv" class="btn btn-secondary" disabled>Export CSV</button>
+          <button type="button" id="export-json" class="btn btn-secondary" disabled>Export JSON</button>
+        </div>
+      </div>
+
+      <div id="empty-state" class="empty-state">
+        <p class="empty-title">No test cases yet</p>
+        <p>Enter a requirement above and select <em>Generate test cases</em>. Results appear here.</p>
+      </div>
+
+      <div id="table-wrap" class="table-wrap" hidden>
+        <table id="results-table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Title</th>
+              <th scope="col">Preconditions</th>
+              <th scope="col">Test steps</th>
+              <th scope="col">Expected result</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Type</th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container site-footer">
+    <p>AI-generated output can contain mistakes. Review every test case before using it.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
