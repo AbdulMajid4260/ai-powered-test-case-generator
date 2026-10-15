@@ -1,82 +1,46 @@
-# AI-Powered Test Case Generator – Frontend
+# Frontend - AI Test Case Generator (React + Vite)
 
-A clean, accessible vanilla HTML/CSS/JS frontend for the AI-powered test case generator.
-
-## Overview
-
-This frontend lets users:
-- Enter a plain-English software requirement (up to 3,000 characters)
-- Send it to the FastAPI backend which calls an LLM
-- View the generated test cases in a structured, sortable table
-- Export results as **CSV** (UTF-8 BOM for Excel compatibility) or **JSON**
-
-## Project Structure
-
-```
-frontend/
-├── index.html   # App shell, semantic HTML5, fully accessible (ARIA)
-├── style.css    # Design tokens, responsive layout, mobile card view
-└── app.js       # Fetch API, input validation, response parsing, export logic
-```
-
-## Getting Started
-
-1. **Start the backend** (FastAPI) at `http://127.0.0.1:8000` – see the backend README.
-2. Open `index.html` in your browser directly, or serve with any static file server:
-   ```bash
-   npx serve .
-   # or
-   python -m http.server 5500
-   ```
-3. Enter a requirement, press **Generate test cases** (or `Ctrl + Enter`).
-
-## API Contract
-
-The frontend `POST`s to `/api/generate-test-cases` with:
-
-```json
-{ "requirement": "<plain-english text>" }
-```
-
-It expects a `200 OK` with:
-
-```json
-{
-  "test_cases": [
-    {
-      "test_case_id": "TC-001",
-      "title": "...",
-      "preconditions": ["..."],
-      "test_steps": ["..."],
-      "expected_result": "...",
-      "priority": "High | Medium | Low",
-      "test_type": "Positive | Negative"
-    }
-  ]
-}
-```
-
-## Key Design Decisions
-
-| Concern | Approach |
-|---|---|
-| Security | LLM API key lives only in the backend; nothing secret in this file |
-| Accessibility | ARIA live regions, `role="alert"`, keyboard shortcut (`Ctrl+Enter`) |
-| CSV injection | Cells starting with `= + - @` get a leading apostrophe |
-| Timeout | 90 s `AbortController` timeout (LLM calls can be slow) |
-| Error UX | Friendly, categorised error messages for network / HTTP / AI errors |
-
-## Contributing
-
-Work on a **feature branch** and open a pull request into `main`:
-
+## Run
 ```bash
-git checkout -b feature/<your-name>-<short-description>
-git add .
-git commit -m "feat: describe your change"
-git push origin feature/<your-name>-<short-description>
+cd frontend
+npm install
+npm run dev
 ```
+Open http://127.0.0.1:5173. The backend must run at http://127.0.0.1:8000
+(override with `VITE_API_BASE_URL` in `.env`, see `.env.example`).
 
-## License
+## Pages
+| Route | Page |
+|---|---|
+| `/` | Home |
+| `/generate` | Generate test cases, filter, export |
+| `/history` | Past requirements with date/time, view, reuse, delete |
+| `/about` | About us |
+| `/contact` | Contact us |
 
-MIT
+Light/dark mode: toggle in the navbar. The choice is saved in localStorage.
+
+## API used
+| Method | URL | Notes |
+|---|---|---|
+| POST | /api/generate-test-cases | `{"requirement": "..."}` -> `{"test_cases": [...]}` |
+| POST | /api/export/csv | `{"test_cases": [...]}` -> CSV file |
+| POST | /api/export/json | `{"test_cases": [...]}` -> JSON file |
+| GET | /api/history | `{"items": [{id, created_at, requirement, test_case_count, positive_count, negative_count, model}]}` newest first |
+| GET | /api/history/{id} | full record including `test_cases` |
+| DELETE | /api/history/{id} | 204 |
+
+Errors: any 4xx/5xx with `{"detail": "message"}` is shown to the user.
+Backend CORS must allow origins http://127.0.0.1:5173 and http://localhost:5173,
+methods GET/POST/DELETE, and expose the `Content-Disposition` header.
+
+## Structure
+- `src/App.jsx` - layout and routes
+- `src/pages/` - Home, Generate, History, About, Contact
+- `src/components/` - Navbar, Footer, ThemeToggle, RequirementForm, ResultsPanel, ResultsTable, ErrorBanner, Badge
+- `src/hooks/useTheme.js` - theme state
+- `src/api.js` - all backend calls and error mapping
+- `src/utils/` - validation, errors, formatting
+
+Before submitting, edit the placeholders in `src/pages/About.jsx` and `src/pages/Contact.jsx`
+(team names, email, repo URL) and the brand name in `Navbar.jsx` / `Footer.jsx`.
