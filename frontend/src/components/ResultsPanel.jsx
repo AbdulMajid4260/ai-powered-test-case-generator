@@ -59,6 +59,14 @@ export default function ResultsPanel({ testCases, loading, exporting, onExport }
           >
             {exporting === "json" ? "Preparing..." : "Export JSON"}
           </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => onExport("xlsx")}
+            disabled={!hasResults || loading || exporting !== null}
+          >
+            {exporting === "xlsx" ? "Preparing..." : "Export Excel"}
+          </button>
         </div>
       </div>
 

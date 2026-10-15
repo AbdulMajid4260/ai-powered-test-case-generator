@@ -13,3 +13,5 @@ __pycache__/
 # Local environment files
 .env
 # Created by venv; see https://docs.python.org/3/library/venv.html
+
+backend/test_cases.db

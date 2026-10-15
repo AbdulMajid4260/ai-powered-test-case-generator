@@ -15,6 +15,7 @@ export default function Generate() {
   const [exporting, setExporting] = useState(null); // "csv" | "json" | null
   const [error, setError] = useState(null);
   const [testCases, setTestCases] = useState([]);
+  const [generationId, setGenerationId] = useState(null);
 
   async function handleGenerate() {
     if (loading) return; // blocks double submits
@@ -32,6 +33,15 @@ export default function Generate() {
     try {
       const data = await generateTestCases(text);
       const cases = parseTestCases(data);
+
+      if (!data.generation_id) {
+        throw new AppError(
+          "Missing generation ID",
+          "The server did not return a generation ID. Please try again."
+        );
+      }
+
+      setGenerationId(data.generation_id);
       if (cases.length === 0) {
         throw new AppError(
           "No test cases returned",
@@ -52,7 +62,14 @@ export default function Generate() {
     setError(null);
     setExporting(format);
     try {
-      const { blob, filename } = await exportTestCases(format, testCases);
+      if (!generationId) {
+  throw new AppError(
+    "Nothing to export",
+    "Generate test cases again before exporting."
+  );
+}
+
+const { blob, filename } = await exportTestCases(generationId, format);
       saveBlob(blob, filename);
     } catch (err) {
       setError(toDisplayError(err));
@@ -66,6 +83,7 @@ export default function Generate() {
     setFieldError("");
     setError(null);
     setTestCases([]);
+    setGenerationId(null);
   }
 
   return (
