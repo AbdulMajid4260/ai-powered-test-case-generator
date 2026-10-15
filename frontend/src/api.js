@@ -89,12 +89,19 @@ export async function generateTestCases(requirement) {
 }
 
 /** POST /api/export/{csv|json} - the backend builds the file; we just download it. */
-export async function exportTestCases(format, testCases) {
-  const response = await post(`/api/export/${format}`, { test_cases: testCases });
+export async function exportTestCases(generationId, format) {
+  const response = await send(
+    "GET",
+    `/api/export/${encodeURIComponent(generationId)}?format=${encodeURIComponent(format)}`
+  );
+
   const blob = await response.blob();
   const header = response.headers.get("Content-Disposition") || "";
   const match = header.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
-  const filename = match ? decodeURIComponent(match[1]) : `test_cases.${format}`;
+  const filename = match
+    ? decodeURIComponent(match[1])
+    : `test_cases.${format}`;
+
   return { blob, filename };
 }
 
