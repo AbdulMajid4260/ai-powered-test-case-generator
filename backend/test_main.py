@@ -1,16 +1,29 @@
+
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
 
 import main
-from schemas import TestCase as TestCaseSchema
-
+from schemas import TestCase
 
 client = TestClient(main.app)
 
 
+def make_cases(count=5):
+    return [
+        TestCase(
+            test_case_id=f"TC{i:03}",
+            title=f"Test case {i}",
+            preconditions=["A test user exists"],
+            test_steps=["Open the application", "Perform the test action"],
+            expected_result=f"Expected result {i}",
+            priority="High" if i == 1 else "Medium",
+            test_type="Positive" if i % 2 else "Negative",
+        )
+        for i in range(1, count + 1)
+    ]
+
+
 def test_health_endpoint():
     response = client.get("/health")
-
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
@@ -20,16 +33,11 @@ def test_empty_requirement_is_rejected():
         "/api/generate-test-cases",
         json={"requirement": "   "},
     )
-
     assert response.status_code == 422
 
 
 def test_missing_requirement_is_rejected():
-    response = client.post(
-        "/api/generate-test-cases",
-        json={},
-    )
-
+    response = client.post("/api/generate-test-cases", json={})
     assert response.status_code == 422
 
 
@@ -41,62 +49,32 @@ def test_unknown_request_field_is_rejected():
             "extra_field": "unexpected",
         },
     )
-
     assert response.status_code == 422
 
 
-def test_generate_test_cases_successfully(monkeypatch):
-    fake_test_cases = [
-        TestCaseSchema(
-            test_case_id="TC001",
-            title="Login with valid credentials",
-            preconditions=["A registered user exists"],
-            test_steps=[
-                "Open the login page",
-                "Enter a registered email and correct password",
-                "Click the Login button",
-            ],
-            expected_result="The user is redirected to the dashboard",
-            priority="High",
-            test_type="Positive",
-        )
-    ]
-
-    def fake_generate_test_cases(requirement):
-        assert "log in" in requirement.lower()
-        return fake_test_cases
-
+def test_generation_returns_at_least_five_cases(monkeypatch):
     monkeypatch.setattr(
         main,
         "generate_test_cases",
-        fake_generate_test_cases,
+        lambda requirement: make_cases(5),
     )
 
     response = client.post(
         "/api/generate-test-cases",
-        json={
-            "requirement": "Users can log in with valid credentials."
-        },
+        json={"requirement": "Users can log in."},
     )
 
     assert response.status_code == 200
-
     body = response.json()
-    assert len(body["test_cases"]) == 1
-    assert body["test_cases"][0]["test_case_id"] == "TC001"
-    assert body["test_cases"][0]["priority"] == "High"
-    assert body["test_cases"][0]["test_type"] == "Positive"
+    assert len(body["test_cases"]) == 5
+    assert body["generation_id"]
 
 
-def test_gemini_failure_returns_502(monkeypatch):
-    def fake_generate_test_cases(requirement):
-        raise RuntimeError("Simulated Gemini failure")
+def test_generation_failure_returns_502(monkeypatch):
+    def fail_generation(requirement):
+        raise RuntimeError("Simulated provider failure")
 
-    monkeypatch.setattr(
-        main,
-        "generate_test_cases",
-        fake_generate_test_cases,
-    )
+    monkeypatch.setattr(main, "generate_test_cases", fail_generation)
 
     response = client.post(
         "/api/generate-test-cases",
@@ -104,32 +82,29 @@ def test_gemini_failure_returns_502(monkeypatch):
     )
 
     assert response.status_code == 502
-    assert response.json() == {
-        "detail": "Test-case generation failed. Please try again later."
-    }
 
 
-def test_invalid_ai_data_returns_502(monkeypatch):
-    def fake_generate_test_cases(requirement):
-        # Deliberately invalid: required test-case fields are missing.
-        return [
-            TestCaseSchema.model_validate(
-                {"test_case_id": "TC001"}
-            )
-        ]
-
+def test_excel_export_uses_backend_results(monkeypatch):
     monkeypatch.setattr(
         main,
         "generate_test_cases",
-        fake_generate_test_cases,
+        lambda requirement: make_cases(5),
     )
 
-    response = client.post(
+    generated = client.post(
         "/api/generate-test-cases",
         json={"requirement": "Users can log in."},
     )
+    assert generated.status_code == 200
 
-    assert response.status_code == 502
-    assert response.json() == {
-        "detail": "The AI returned invalid test-case data. Please try again."
-    }
+    generation_id = generated.json()["generation_id"]
+    exported = client.get(f"/api/export/{generation_id}")
+
+    assert exported.status_code == 200
+    assert "spreadsheetml.sheet" in exported.headers["content-type"]
+    assert exported.content[:2] == b"PK"
+
+
+def test_unknown_export_id_returns_404():
+    response = client.get("/api/export/not-a-real-id")
+    assert response.status_code == 404

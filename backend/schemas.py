@@ -1,3 +1,4 @@
+
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -26,4 +27,5 @@ class TestCase(BaseModel):
 
 
 class GenerateResponse(BaseModel):
-    test_cases: list[TestCase] = Field(min_length=1)
+    generation_id: str
+    test_cases: list[TestCase] = Field(min_length=5, max_length=10)

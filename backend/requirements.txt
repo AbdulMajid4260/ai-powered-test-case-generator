@@ -1,9 +1,8 @@
-
 fastapi
 uvicorn[standard]
-google-genai
+groq
 pydantic
 python-dotenv
 pytest
 httpx
-
+openpyxl
